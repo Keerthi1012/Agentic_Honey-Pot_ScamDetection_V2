@@ -274,7 +274,7 @@ When scam is confirmed:
 Return ONLY valid JSON.
 """
 
-def build_reason_prompt(message: str, history: list, suspiciousKeywords: list) -> str:
+def build_reason_prompt(message: str, history: list, suspiciouskeywords: list) -> str:
     return """
 You are a spam analysis engine used in a honeypot detection system.
 
@@ -298,6 +298,16 @@ Style:
 - Single sentence
 - Clear, professional, and understandable to non-technical users
 - Length strictly between 20 and 200 characters
+
+────────────────────────
+CURRENT CONVERSATION HISTORY
+────────────────────────
+{history}
+
+────────────────────────
+IDENTIFIED SUSPICIOUS KEYWORD
+────────────────────────
+{suspiciouskeywords}
 """
 
 def build_user_prompt(history, latest_message):
