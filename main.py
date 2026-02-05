@@ -60,10 +60,3 @@ app.include_router(router)
 @app.get("/")
 def root():
     return {"status": "Agentic Honeypot API running"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    port = int(os.environ.get("PORT", 8000))  # local fallback
-    uvicorn.run(app, host="0.0.0.0", port=port)
