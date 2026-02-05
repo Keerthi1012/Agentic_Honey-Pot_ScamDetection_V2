@@ -43,8 +43,8 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown logic
     print("💾 Saving vector memory...")
-
-    faiss.write_index(app.state.index, os.path.join(MODELS_DIR, "index.faiss"))
+    if os.getenv("ENV") == "local":
+        faiss.write_index(app.state.index, os.path.join(MODELS_DIR, "index.faiss"))
 
     with open(os.path.join(MODELS_DIR, "texts.pkl"), "wb") as f:
         pickle.dump(app.state.texts, f)
@@ -53,10 +53,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Agentic Honeypot API", lifespan=lifespan)
+
 # Include our API routes
 app.include_router(router)
 
 
-@app.get("/")
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 def root():
     return {"status": "Agentic Honeypot API running"}
