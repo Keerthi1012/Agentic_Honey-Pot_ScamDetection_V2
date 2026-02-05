@@ -6,8 +6,9 @@ openai==1.51.2
 python-dotenv==1.0.1
 requests==2.32.3
 scikit-learn==1.7.2
-spacy==3.7.6
 groq
 sentence_transformers
 faiss-cpu==1.8.0
 numpy<2
+spacy==3.7.6
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl

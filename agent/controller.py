@@ -14,9 +14,9 @@ from groq import Groq
 import json
 from fastapi import Request
 
-from spacy.cli import download
+# from spacy.cli import download
 
-download("en_core_web_sm")
+# download("en_core_web_sm")
 
 # Load environment variables
 load_dotenv()
