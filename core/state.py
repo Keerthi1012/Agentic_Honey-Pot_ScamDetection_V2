@@ -22,19 +22,21 @@ _sessions: Dict[str, Dict[str, Any]] = {}
 # Session APIs
 # -----------------------------
 
+_sessions: Dict[str, Dict[str, Any]] = {}
+
+
 def init_session(session_id: str):
-    """
-    Initialize a session if it does not exist
-    """
     if session_id not in _sessions:
         _sessions[session_id] = {
             "session_id": session_id,
-            "messages": [],          # conversation timeline
-            "confidence": 0.0,       # last computed confidence
-            "stage": "unknown",      # probing / extraction / benign
-            "intels": [],       # extracted scam intel (future)
+            "messages": [],  # conversation history
+            "confidence": 0.0,  # last computed confidence
+            "stage": "unknown",  # probing / extraction / benign
+            "intels": {},  # dict of intel: upiIds, bankAccounts, links etc.
             "signals": [],
-            "suspiciousKeywords": []
+            "suspiciousKeywords": [],
+            "scam_type": None,  # OTP fraud, Lucky draw, KYC scam etc.
+            "final_sent": False,
         }
 
 
@@ -45,18 +47,45 @@ def get_session(session_id: str) -> Dict[str, Any]:
     return _sessions.get(session_id)
 
 
-def update_session(session_id: str, updates: Dict[str, Any]):
+def update_session(session_id: str, updates: dict):
     """
-    Update session state safely
+    Safely update session state.
+    Handles:
+    - Lists → extend or append
+    - Dicts of lists → merge subkeys
+    - Scalars → overwrite
     """
     if session_id not in _sessions:
         init_session(session_id)
 
     for key, value in updates.items():
+        # Key not present → initialize appropriately
         if key not in _sessions[session_id]:
-            _sessions[session_id][key] = []
+            if isinstance(value, list):
+                _sessions[session_id][key] = []
+            elif isinstance(value, dict):
+                _sessions[session_id][key] = {k: [] for k in value.keys()}
+            else:
+                _sessions[session_id][key] = value
 
-        if isinstance(_sessions[session_id][key], list):
+        # Merge dict of lists
+        if isinstance(value, dict) and isinstance(_sessions[session_id][key], dict):
+            for subkey, subval in value.items():
+                if subkey not in _sessions[session_id][key]:
+                    _sessions[session_id][key][subkey] = []
+                if isinstance(subval, list):
+                    _sessions[session_id][key][subkey].extend(subval)
+                else:
+                    _sessions[session_id][key][subkey].append(subval)
+
+        # Merge lists
+        elif isinstance(value, list) and isinstance(_sessions[session_id][key], list):
+            _sessions[session_id][key].extend(value)
+
+        # Append scalar to list if existing is list
+        elif isinstance(_sessions[session_id][key], list):
             _sessions[session_id][key].append(value)
+
+        # Otherwise, overwrite
         else:
             _sessions[session_id][key] = value

@@ -3,44 +3,58 @@ from typing import Dict, List
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from detection.message_scoring import spam_ml_probability
+
 # -----------------------------
 # Keyword sets (easy to extend)
 # -----------------------------
 confidence = 0.0
 URGENCY_KEYWORDS = [
-    "immediately", "urgent", "today", "now", "within", "24 hours", "limited time","asap", "right away", "limited time", "today only"
+    "immediately",
+    "urgent",
+    "today",
+    "now",
+    "within",
+    "24 hours",
+    "limited time",
+    "asap",
+    "right away",
+    "limited time",
+    "today only",
 ]
 
 THREAT_KEYWORDS = [
-    "blocked", "suspended", "terminated", "legal action", "penalty", "frozen"
+    "blocked",
+    "suspended",
+    "terminated",
+    "legal action",
+    "penalty",
+    "frozen",
 ]
 
-ACTION_KEYWORDS = [
-    "verify", "click", "login", "pay", "transfer", "update", "confirm"
-]
+ACTION_KEYWORDS = ["verify", "click", "login", "pay", "transfer", "update", "confirm"]
 
 AUTHORITY_KEYWORDS = [
-    "bank", "government", "support", "customer care", "admin", "official"
+    "bank",
+    "government",
+    "support",
+    "customer care",
+    "admin",
+    "official",
 ]
 
-SENSITIVE_INFO_KEYWORDS = [
-    "otp", "pin", "password", "cvv", "account number", "upi"
-]
+SENSITIVE_INFO_KEYWORDS = ["otp", "pin", "password", "cvv", "account number", "upi"]
 
-SUSPICIOUS_TLDS = [
-    ".xyz", ".top", ".info", ".click", ".link"
-]
+SUSPICIOUS_TLDS = [".xyz", ".top", ".info", ".click", ".link"]
 
-URL_SHORTENERS = [
-    "bit.ly", "tinyurl", "goo.gl", "t.co"
-]
+URL_SHORTENERS = ["bit.ly", "tinyurl", "goo.gl", "t.co"]
 
 # -----------------------------
 # Helper functions
 # -----------------------------
 
+
 def extract_urls(text: str) -> List[str]:
-    return re.findall(r'(https?://[^\s]+)', text.lower())
+    return re.findall(r"(https?://[^\s]+)", text.lower())
 
 
 def has_grammar_anomaly(text: str) -> bool:
@@ -63,46 +77,53 @@ def has_grammar_anomaly(text: str) -> bool:
 # Main intent detection logic
 # -----------------------------
 # stage 1: Heuristic Scoring
-def detect_intent(text: str,spam_model,vectorizer,session) -> Dict:
-    text_lower = text.lower()   
-    signals = session.get("signals", set())
-    suspiciousKeywords = session.get("suspiciousKeywords", set())
+def detect_intent(text: str, spam_model, vectorizer, session) -> Dict:
+    text_lower = text.lower()
+    signals = session.get("signals", [])
+    suspiciousKeywords = session.get("suspiciousKeywords", [])
+
     confidence = session.get("confidence", 0.0)
     # 1. Urgency
     if any(word in text_lower for word in URGENCY_KEYWORDS):
         confidence += 0.15
         signals.append("urgency")
-        suspiciousKeywords.append(text_lower)
-
+        if text_lower not in suspiciousKeywords:
+            suspiciousKeywords.append(text_lower)
 
     # 2. Threat / Fear
     if any(word in text_lower for word in THREAT_KEYWORDS):
         confidence += 0.15
         signals.append("threat")
-        suspiciousKeywords.append(text_lower)
+        if text_lower not in suspiciousKeywords:
+            suspiciousKeywords.append(text_lower)
 
     # 3. Action demand
     if any(word in text_lower for word in ACTION_KEYWORDS):
         confidence += 0.15
         signals.append("action_request")
-        suspiciousKeywords.append(text_lower)
+        if text_lower not in suspiciousKeywords:
+            suspiciousKeywords.append(text_lower)
 
     # 4. Authority impersonation
     if any(word in text_lower for word in AUTHORITY_KEYWORDS):
         confidence += 0.10
         signals.append("authority_impersonation")
-        suspiciousKeywords.append(text_lower)
+        if text_lower not in suspiciousKeywords:
+            suspiciousKeywords.append(text_lower)
 
     # 5. Sensitive information request
     if any(word in text_lower for word in SENSITIVE_INFO_KEYWORDS):
         confidence += 0.15
         signals.append("sensitive_info_request")
-        suspiciousKeywords.append(text_lower)
+        if text_lower not in suspiciousKeywords:
+            suspiciousKeywords.append(text_lower)
 
     # 6. Suspicious URLs
     urls = extract_urls(text)
     for url in urls:
-        if any(tld in url for tld in SUSPICIOUS_TLDS) or any(s in url for s in URL_SHORTENERS):
+        if any(tld in url for tld in SUSPICIOUS_TLDS) or any(
+            s in url for s in URL_SHORTENERS
+        ):
             confidence += 0.15
             signals.append("suspicious_url")
             break
@@ -116,16 +137,18 @@ def detect_intent(text: str,spam_model,vectorizer,session) -> Dict:
     heuristic_score = min(confidence, 1.0)
     print(f"Heuristic Score: {heuristic_score}")
 
-    #stage 2: Spam ML Probability
-    spam_ml_risk_score = spam_ml_probability(text,spam_model,vectorizer)
+    # stage 2: Spam ML Probability
+    spam_ml_risk_score = spam_ml_probability(text, spam_model, vectorizer)
 
     # Stage 3: Length + urgency patterns
-    urgency_patterns = len(re.findall(r'\b(urgent|immediately|now|today)\b', text.lower()))
+    urgency_patterns = len(
+        re.findall(r"\b(urgent|immediately|now|today)\b", text.lower())
+    )
     urgency_score = min(urgency_patterns, 2) * 0.05
     msg_length_score = 1 if 20 < len(text) < 200 else 0  # Typical scam length
-    
-    #Stage 4: Calculate Risk Score
-    final_risk_score = heuristic_score * 0.6 +spam_ml_risk_score * 0.4 +urgency_score
+
+    # Stage 4: Calculate Risk Score
+    final_risk_score = heuristic_score * 0.6 + spam_ml_risk_score * 0.4 + urgency_score
 
     print(f"Final_Risk_Score: {final_risk_score}")
 
@@ -141,12 +164,5 @@ def detect_intent(text: str,spam_model,vectorizer,session) -> Dict:
         "decision": decision,
         "confidence": final_risk_score,
         "signals": signals,
-        "suspiciousKeywords": suspiciousKeywords
+        "suspiciousKeywords": suspiciousKeywords,
     }
-
-
-
-    
-    
-    
-    
