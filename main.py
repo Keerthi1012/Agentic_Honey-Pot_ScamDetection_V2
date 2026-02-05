@@ -26,9 +26,7 @@ async def lifespan(app: FastAPI):
     app.state.vectorizer = joblib.load(os.path.join(MODELS_DIR, "vectorizer.pkl"))
 
     # 3. Load embedder (BERT)
-    app.state.embedder = SentenceTransformer(
-        "sentence-transformers/all-MiniLM-L6-v2"
-    )
+    app.state.embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     # 4. Load FAISS index (if exists)
     try:
@@ -46,19 +44,26 @@ async def lifespan(app: FastAPI):
     # Shutdown logic
     print("💾 Saving vector memory...")
 
-    faiss.write_index(app.state.index,os.path.join(MODELS_DIR, "index.faiss"))
+    faiss.write_index(app.state.index, os.path.join(MODELS_DIR, "index.faiss"))
 
     with open(os.path.join(MODELS_DIR, "texts.pkl"), "wb") as f:
         pickle.dump(app.state.texts, f)
 
     print("✅ Saved successfully")
-app = FastAPI(title="Agentic Honeypot API",lifespan=lifespan)
+
+
+app = FastAPI(title="Agentic Honeypot API", lifespan=lifespan)
 # Include our API routes
 app.include_router(router)
+
+
 @app.get("/")
 def root():
     return {"status": "Agentic Honeypot API running"}
 
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+
+    port = int(os.environ.get("PORT", 8000))  # local fallback
+    uvicorn.run(app, host="0.0.0.0", port=port)
