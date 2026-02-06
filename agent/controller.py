@@ -477,6 +477,9 @@ def generate_reason(latest_message, history: list, suspiciousKeywords: list) -> 
 def extract_intel(text: str, suspiciousKeywords) -> dict:
     text = text.lower()
 
+    # ---- Bank accounts: 12–16 continuous digits ----
+    bank_accounts = list(set(re.findall(r"\b\d{12,16}\b", text)))
+
     """Extract URLs using SpaCy's built-in URL detection + custom patterns"""
     doc = nlp(text)
 
@@ -511,7 +514,7 @@ def extract_intel(text: str, suspiciousKeywords) -> dict:
         upi_ids.extend(re.findall(pattern, text))
 
     intel = {
-        "bankAccounts": re.findall(r"\b\d{4}-\d{4}-\d{4}\b", text),  # XXXX-XXXX-XXXX
+        "bankAccounts": bank_accounts,  # XXXX-XXXX-XXXX
         "upiIds": list(set(upi_ids)),  # Remove duplicates
         "phishingLinks": list(
             set([link for link in unique_links if "http" in link or "www" in link])
