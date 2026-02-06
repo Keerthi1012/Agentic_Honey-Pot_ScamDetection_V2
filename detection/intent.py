@@ -84,39 +84,55 @@ def detect_intent(text: str, spam_model, vectorizer, session) -> Dict:
 
     confidence = session.get("confidence", 0.0)
     # 1. Urgency
-    if any(word in text_lower for word in URGENCY_KEYWORDS):
+    matched_keywords = [word for word in URGENCY_KEYWORDS if word in text_lower]
+
+    if matched_keywords:
         confidence += 0.15
         signals.append("urgency")
-        if text_lower not in suspiciousKeywords:
-            suspiciousKeywords.append(text_lower)
+
+        for kw in matched_keywords:
+            if kw not in suspiciousKeywords:
+                suspiciousKeywords.append(kw)
 
     # 2. Threat / Fear
-    if any(word in text_lower for word in THREAT_KEYWORDS):
+    matched_keywords = [word for word in THREAT_KEYWORDS if word in text_lower]
+    if matched_keywords:
         confidence += 0.15
         signals.append("threat")
-        if text_lower not in suspiciousKeywords:
-            suspiciousKeywords.append(text_lower)
+
+        for kw in matched_keywords:
+            if kw not in suspiciousKeywords:
+                suspiciousKeywords.append(kw)
 
     # 3. Action demand
-    if any(word in text_lower for word in ACTION_KEYWORDS):
+    matched_keywords = [word for word in ACTION_KEYWORDS if word in text_lower]
+    if matched_keywords:
         confidence += 0.15
         signals.append("action_request")
-        if text_lower not in suspiciousKeywords:
-            suspiciousKeywords.append(text_lower)
+
+        for kw in matched_keywords:
+            if kw not in suspiciousKeywords:
+                suspiciousKeywords.append(kw)
 
     # 4. Authority impersonation
-    if any(word in text_lower for word in AUTHORITY_KEYWORDS):
+    matched_keywords = [word for word in AUTHORITY_KEYWORDS if word in text_lower]
+    if matched_keywords:
         confidence += 0.10
         signals.append("authority_impersonation")
-        if text_lower not in suspiciousKeywords:
-            suspiciousKeywords.append(text_lower)
+
+        for kw in matched_keywords:
+            if kw not in suspiciousKeywords:
+                suspiciousKeywords.append(kw)
 
     # 5. Sensitive information request
-    if any(word in text_lower for word in SENSITIVE_INFO_KEYWORDS):
+    matched_keywords = [word for word in SENSITIVE_INFO_KEYWORDS if word in text_lower]
+    if matched_keywords:
         confidence += 0.15
         signals.append("sensitive_info_request")
-        if text_lower not in suspiciousKeywords:
-            suspiciousKeywords.append(text_lower)
+
+        for kw in matched_keywords:
+            if kw not in suspiciousKeywords:
+                suspiciousKeywords.append(kw)
 
     # 6. Suspicious URLs
     urls = extract_urls(text)

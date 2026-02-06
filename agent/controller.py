@@ -539,7 +539,16 @@ def prepare_intel_for_json(session_intel: dict) -> dict:
         # If it's a set, convert to list
         if isinstance(val, set):
             val = list(val)
-        result[k] = val
+
+        # Remove duplicates but preserve order
+        seen = set()
+        unique_vals = []
+        for item in val:
+            if item not in seen:
+                seen.add(item)
+                unique_vals.append(item)
+
+        result[k] = unique_vals
     return result
 
 
