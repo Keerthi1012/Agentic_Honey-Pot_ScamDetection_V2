@@ -4,7 +4,8 @@ from api.routes import router
 import pickle
 import faiss
 import joblib
-from sentence_transformers import SentenceTransformer
+
+# from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
 from contextlib import asynccontextmanager
 from fastapi import Request
