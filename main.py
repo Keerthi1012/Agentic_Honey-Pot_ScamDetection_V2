@@ -26,6 +26,16 @@ async def lifespan(app: FastAPI):
     app.state.vectorizer = joblib.load(os.path.join(MODELS_DIR, "vectorizer.pkl"))
 
     # 3. Load embedder (BERT)
+    USE_EMBEDDINGS = False
+    if USE_EMBEDDINGS:
+        app.state.embedder = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2"
+        )
+    else:
+        app.state.embedder = None
+        app.state.index = None
+        app.state.texts = []
+
     app.state.embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     # 4. Load FAISS index (if exists)
