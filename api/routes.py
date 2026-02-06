@@ -1,7 +1,8 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException,Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+from api.dependencies import verify_api_key
 
 router = APIRouter(prefix="/api/v1")
 
@@ -13,17 +14,20 @@ class Message(BaseModel):
     sender: str
     text: str
     timestamp: datetime
-    
+
+
 class Metadata(BaseModel):
     channel: Optional[str] = None
     language: Optional[str] = None
     locale: Optional[str] = None
+
 
 class IncomingMessage(BaseModel):
     sessionId: str
     message: Message
     conversationHistory: List[Message] = []
     metadata: Optional[Metadata] = None
+
 
 class AgentResponse(BaseModel):
     sender: Optional[str] = None
@@ -36,13 +40,18 @@ class AgentResponse(BaseModel):
     # signals: Optional[list] = None
     # agentReply: Optional[str] = None
 
+
 # -----------------------------
 # Main Ingress Endpoint
 # -----------------------------
 
-@router.post("/ingest", response_model=AgentResponse)
+
+@router.post(
+    "/ingest", response_model=AgentResponse, dependencies=[Depends(verify_api_key)]
+)
 def ingest_message(payload: IncomingMessage, request: Request):
     from agent.controller import handle_agent
+
     """
     Unified entry point for:
     - SMS
@@ -56,10 +65,7 @@ def ingest_message(payload: IncomingMessage, request: Request):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     result = handle_agent(
-        session_id=payload.sessionId,
-        message=payload.message,
-        request=request
+        session_id=payload.sessionId, message=payload.message, request=request
     )
 
     return result
-
