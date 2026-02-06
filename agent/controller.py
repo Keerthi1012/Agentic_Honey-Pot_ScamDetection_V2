@@ -380,6 +380,7 @@ Rules:
 - Do NOT mention internal systems, honeypots, or AI
 - Do NOT quote messages verbatim
 - Summarize the behavior, not the entire conversation
+- If multiple signals exist, merge them into a single coherent reason
 - Focus on intent signals such as urgency, impersonation, OTP requests, pressure, or verification abuse
 - Output ONLY the reason text, nothing else
 
@@ -480,6 +481,14 @@ def extract_intel(text: str, suspiciousKeywords) -> dict:
     # ---- Bank accounts: 12–16 continuous digits ----
     bank_accounts = list(set(re.findall(r"\b\d{12,16}\b", text)))
 
+    # ---- Phone numbers (India-safe, avoids partial endings) ----
+    phone_numbers = set()
+
+    for match in re.findall(r"\+91\d{10}|\b\d{10}\b", text):
+        # Ignore numbers mentioned as "ending in XXXX"
+        if "ending" not in text:
+            phone_numbers.add(match)
+
     """Extract URLs using SpaCy's built-in URL detection + custom patterns"""
     doc = nlp(text)
 
@@ -519,7 +528,7 @@ def extract_intel(text: str, suspiciousKeywords) -> dict:
         "phishingLinks": list(
             set([link for link in unique_links if "http" in link or "www" in link])
         ),
-        "phoneNumbers": re.findall(r"\+91\d{10}|\d{10}", text),
+        "phoneNumbers": list(phone_numbers),
         "suspiciousKeywords": suspiciousKeywords,
     }
 
